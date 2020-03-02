@@ -1,0 +1,32 @@
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -P OUTPUT DROP
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+
+
+#protect against ping flood
+iptables -A OUTPUT -p icmp -m limit --limit 6/second  -j ACCEPT
+iptables -t filter -A OUTPUT -p icmp –icmp-type echo-reply -j ACCEPT
+iptables -t filter -A INPUT -p icmp -j DROP
+
+
+#No dns zonetransfers
+iptables -A OUTPUT -d DNSServer -p udp -dport 53 -j ACCEPT
+iptables -A INPUT -s DNSServer -p udp -sport 53 -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 53 -j DROP
+iptables -A INPUT -p tcp --dport 53 -j DROP
+
+#http(s)
+iptables -A INPUT -m state –state NEW,ESTABLISHED -m tcp -p tcp –dport 80 -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 80 -m state --state ESTABLISHED -j ACCEPT
+iptables -A input -m state –state NEW,ESTABLISHED -m tcp -p tcp –dport 443 -j ACCEPT
+iptables -A OUTPUT -o eth0 -p tcp --sport 443 -m state --state ESTABLISHED -j ACCEPT
+
+#ftp
+iptables -A OUTPUT -p tcp --sport 20 -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p tcp --dport 20 -m state --state ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 21 -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp --dport 21 -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 1024: --dport 1024: -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp --sport 1024: --dport 1024: -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
